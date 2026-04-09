@@ -3,100 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Viscous Jelly</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>
-    <style>
-        body, html { 
-            margin: 0; padding: 0; height: 100%; width: 100%; 
-            background: #050510; overflow: hidden; 
-        }
-        #canvas { width: 100%; height: 100%; display: block; }
-    </style>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="JellyOrg">
+
+    <title>Jelly Organization App</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
 </head>
 <body>
-    <canvas id="canvas"></canvas>
 
-    <script>
-        const { Engine, Render, Runner, Bodies, Composite, Constraint, MouseConstraint, Mouse } = Matter;
+    <canvas id="jelly-canvas"></canvas>
 
-        const canvas = document.getElementById('canvas');
-        const engine = Engine.create();
-        engine.gravity.y = 0; // No gravity for floaty jelly
+    <div id="settings-btn" onclick="toggleSettings()">⚙️</div>
 
-        const render = Render.create({
-            canvas: canvas,
-            engine: engine,
-            options: {
-                width: window.innerWidth,
-                height: window.innerHeight,
-                wireframes: false,
-                background: 'transparent'
-            }
-        });
-
-        // --- THE JELLY MAKER ---
-        function createJelly(x, y, size, color) {
-            const columns = 4;
-            const rows = 4;
-            const particleRadius = 2;
-            
-            // Create a grid of tiny invisible particles
-            const softBody = Matter.Composites.stack(x, y, columns, rows, 0, 0, (x, y) => {
-                return Bodies.circle(x, y, particleRadius, {
-                    frictionAir: 0.05,
-                    collisionFilter: { group: Matter.Body.nextGroup(true) },
-                    render: { fillStyle: color, opacity: 0.5 }
-                });
-            });
-
-            // Connect particles with weak springs (the jelly glue)
-            Matter.Composites.mesh(softBody, columns, rows, false, {
-                stiffness: 0.03, // Low stiffness = more viscous/jelly
-                render: { visible: true, strokeStyle: color, lineWidth: 1 }
-            });
-
-            Composite.add(engine.world, softBody);
-            return softBody;
-        }
-
-        // --- CREATE 3x3 GRID ---
-        const colors = ['#6c5ce7', '#00cec9', '#fab1a0', '#0984e3', '#e84393', '#fdcb6e', '#55efc4', '#a29bfe', '#81ecec'];
-        const spacing = window.innerWidth / 4;
-
-        for(let i=0; i<3; i++) {
-            for(let j=0; j<3; j++) {
-                createJelly(
-                    spacing + (i * spacing) - 50, 
-                    spacing + (j * spacing) - 50, 
-                    60, 
-                    colors[i * 3 + j]
-                );
-            }
-        }
-
-        // --- INTERACTION ---
-        const mouse = Mouse.create(render.canvas);
-        const mouseConstraint = MouseConstraint.create(engine, {
-            mouse: mouse,
-            constraint: {
-                stiffness: 0.1,
-                render: { visible: false }
-            }
-        });
-
-        Composite.add(engine.world, mouseConstraint);
+    <div id="settings-menu" class="glass-panel">
+        <div class="close-settings" onclick="toggleSettings()">✕</div>
         
-        // Fix for iPhone Touch
-        render.mouse = mouse;
+        <h2>Settings</h2>
 
-        Render.run(render);
-        Runner.run(Runner.create(), engine);
+        <div class="control-group">
+            <label>Jelly Color</label>
+            <input type="color" id="primaryPicker" value="#6c5ce7" oninput="updateColors()">
+        </div>
 
-        // Handle window resizing
-        window.addEventListener('resize', () => {
-            render.canvas.width = window.innerWidth;
-            render.canvas.height = window.innerHeight;
-        });
-    </script>
-</body>
-</html>
+        <div class="control-group">
+            <label>Liquid Glow</label>
+            <input type="color" id="secondaryPicker" value="#00cec9" oninput="updateColors()">
+        </div>
+
+        <div class="control-group">
+            <label>Glass Blur</label>
+            <input type="range" id="glassOpacity" min="0" max="0.3" step="0.01" value="0.05" oninput="updateColors()">
+        </div>
+    </div>
+
+    <div id="ui-layer">
+    <div class="label-grid">
+        <input type="text" class="jelly-label" placeholder="Box 1" id="label-0">
+        <input type="text" class="jelly-label" placeholder="Box 2" id="label-1">
+        <input type="text" class="jelly-label" placeholder="Box 3" id="label-2">
+        <input type="text" class="jelly-label" placeholder="Box 4" id="label-3">
+        <input type="text" class="jelly-label" placeholder="Box 5" id="label-4">
+        <input type="text" class="jelly-label" placeholder="Box 6" id="label-5">
+        <input type="text" class="jelly-label" placeholder="Box 7" id="label-6">
+        <input type="text" class="jelly-label" placeholder="Box 8" id="label-7">
+        <input type="text" class="jelly-label" placeholder="Box 9" id="label-8">
+    </div>
+</div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>

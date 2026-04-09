@@ -2,7 +2,11 @@ const CACHE_NAME = 'v1';
 const ASSETS = [
   './',
   './index.html',
-  // Add any images or CSS files here later
+  './style.css',
+  './physics.js',
+  './ui.js',
+  './manifest.json',
+  'https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js'
 ];
 
 // Install the service worker and cache the files
