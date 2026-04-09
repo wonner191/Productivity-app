@@ -3,140 +3,195 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Fluid Organizer</title>
+    <title>Liquid Glass Grid</title>
     <style>
         :root {
-            --bg: #ffffff;
-            --text: #2d3436;
-            --accent: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            --bg-color: #0d1117; /* Dark background to make light effects pop */
+            --glass-color: rgba(255, 255, 255, 0.03); /* Base subtle glass color */
+            --border-color: rgba(255, 255, 255, 0.08); /* Grid lines */
+            --light-color: rgba(108, 92, 231, 1); /* Main light (accent) */
+            --blur: 20px; /* How blurry the glass effect is */
         }
 
         body, html {
             margin: 0; padding: 0; height: 100%; width: 100%;
-            background-color: var(--bg);
+            background-color: var(--bg-color);
             font-family: -apple-system, system-ui, sans-serif;
             overflow: hidden;
+            color: #ccc;
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* 3x3 Grid Layout */
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            width: 90vw; height: 80vh;
-            gap: 15px;
-            padding: 20px;
-            box-sizing: border-box;
+        /* The canvas covers the whole screen */
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
         }
 
-        /* The Liquid Blobs */
-        .grid-item {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            cursor: pointer;
-            background: var(--accent);
-            box-shadow: 0 10px 20px rgba(108, 92, 231, 0.2);
-            animation: blobby 8s ease-in-out infinite;
-            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        /* The Glass UI overlay (for titles, etc.) */
+        #glass-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none; /* Let touches pass through to canvas by default */
             z-index: 10;
         }
 
-        .grid-item span { font-weight: 600; font-size: 0.9rem; pointer-events: none; }
-
-        /* Content inside the zoom - hidden by default */
-        .content {
-            display: none;
-            opacity: 0;
-            padding: 40px 20px;
-            color: white;
-            width: 100%;
-            text-align: center;
-        }
-
-        /* The Zoom State */
-        .grid-item.active {
-            position: fixed !important;
-            top: 0 !important; left: 0 !important;
-            width: 100vw !important; height: 100vh !important;
-            border-radius: 0 !important;
-            z-index: 9999;
-            animation: none;
-        }
-
-        .grid-item.active .content {
-            display: block;
-            opacity: 1;
-            transition: opacity 0.5s 0.3s;
-        }
-
-        .grid-item.active span { display: none; }
-
-        /* Close Button inside zoom */
-        .close-btn {
-            position: absolute;
-            top: 50px; right: 30px;
-            font-size: 2rem;
-            display: none;
-        }
-        .grid-item.active .close-btn { display: block; }
-
-        @keyframes blobby {
-            0%, 100% { border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%; }
-            33% { border-radius: 70% 30% 46% 54% / 30% 29% 71% 70%; }
-            66% { border-radius: 100% 60% 60% 100% / 100% 100% 60% 60%; }
-        }
-
-        /* Organization UI Elements */
-        .task-list { list-style: none; padding: 0; margin-top: 20px; text-align: left; }
-        .task-item { 
-            background: rgba(255,255,255,0.2); 
-            padding: 15px; border-radius: 15px; 
-            margin-bottom: 10px; backdrop-filter: blur(5px);
+        /* A 'glass' panel style */
+        .glass-panel {
+            background: var(--glass-color);
+            -webkit-backdrop-filter: blur(var(--blur));
+            backdrop-filter: blur(var(--blur));
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px;
+            color: #fff;
+            pointer-events: auto; /* Allow interaction with panels */
         }
     </style>
 </head>
 <body>
 
-    <div class="grid-container">
-        <div class="grid-item" onclick="toggleZoom(this)">
-            <span>Tasks</span>
-            <div class="close-btn">&times;</div>
-            <div class="content">
-                <h2>Today's Focus</h2>
-                <div class="task-list">
-                    <div class="task-item">✓ Morning Workout</div>
-                    <div class="task-item">○ Code liquid UI</div>
-                    <div class="task-item">○ GitHub push</div>
-                </div>
-            </div>
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="glass-overlay">
         </div>
-        
-        <div class="grid-item" onclick="toggleZoom(this)"><span>Calendar</span></div>
-        <div class="grid-item" onclick="toggleZoom(this)"><span>Notes</span></div>
-        <div class="grid-item" onclick="toggleZoom(this)"><span>Goals</span></div>
-        <div class="grid-item" onclick="toggleZoom(this)"><span>Finance</span></div>
-        <div class="grid-item" onclick="toggleZoom(this)"><span>Ideas</span></div>
-        <div class="grid-item" onclick="toggleZoom(this)"><span>Health</span></div>
-        <div class="grid-item" onclick="toggleZoom(this)"><span>Reading</span></div>
-        <div class="grid-item" onclick="toggleZoom(this)"><span>Settings</span></div>
-    </div>
 
     <script>
-        function toggleZoom(el) {
-            el.classList.toggle('active');
-        }
+        // Setup Canvas and Context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const overlay = document.getElementById('glass-overlay');
 
-        // Register Service Worker for Offline
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js');
+        // Resize function to make canvas fill screen and look sharp
+        function resize() {
+            // Adjust for DPI
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            ctx.scale(dpr, dpr);
         }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- Grid Data ---
+        // A simple array of points that define the connected grid lines
+        // For a 3x3 grid, we need 4 vertical lines and 4 horizontal lines
+        let gridPoints = []; 
+        function generateGridPoints() {
+            gridPoints = [];
+            const cols = 3;
+            const rows = 3;
+            const spacingX = window.innerWidth / (cols);
+            const spacingY = window.innerHeight / (rows);
+            
+            // Generate horizontal lines
+            for (let i = 0; i <= rows; i++) {
+                gridPoints.push({ x: 0, y: i * spacingY, type: 'h' });
+            }
+            // Generate vertical lines
+            for (let i = 0; i <= cols; i++) {
+                gridPoints.push({ x: i * spacingX, y: 0, type: 'v' });
+            }
+        }
+        generateGridPoints();
+
+        // --- Lighting Data ---
+        // Store points where the user is touching (the 'lights')
+        const touchLights = [];
+
+        // --- The Main Rendering Loop (The Artist) ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the frame
+
+            // 1. Draw the Base Connected Grid (Subtle Lines)
+            ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border-color');
+            ctx.lineWidth = 1;
+            gridPoints.forEach(pt => {
+                ctx.beginPath();
+                if (pt.type === 'h') {
+                    ctx.moveTo(0, pt.y);
+                    ctx.lineTo(canvas.width, pt.y);
+                } else {
+                    ctx.moveTo(pt.x, 0);
+                    ctx.lineTo(pt.x, canvas.height);
+                }
+                ctx.stroke();
+            });
+
+            // 2. Draw the 'Liquid Glass' and 'Lighting' Effect
+            // When a touch occurs, we draw a 'gradient light' that blends into the grid
+            const lightColor = getComputedStyle(document.documentElement).getPropertyValue('--light-color');
+
+            touchLights.forEach(light => {
+                // Create a radial gradient (a blob of light)
+                const gradient = ctx.createRadialGradient(
+                    light.x, light.y, 10, // Inner circle
+                    light.x, light.y, 100 // Outer circle (the radius of light)
+                );
+                
+                // Set the gradient colors (blending from full light to transparent)
+                gradient.addColorStop(0, lightColor.replace('1)', '0.3)')); // Softer inner light
+                gradient.addColorStop(0.5, lightColor.replace('1)', '0.1)')); // Blend
+                gradient.addColorStop(1, lightColor.replace('1)', '0)')); // Transparent edge
+                
+                // Draw the light blob
+                ctx.fillStyle = gradient;
+                ctx.fillRect(light.x - 100, light.y - 100, 200, 200);
+
+                // Now, redraw any grid line that the light touch point is near, but thicker and brighter
+                ctx.strokeStyle = lightColor.replace('1)', '0.8)'); // Brighter line color
+                ctx.lineWidth = 2; // Thicker near the touch
+
+                gridPoints.forEach(pt => {
+                    ctx.beginPath();
+                    if (pt.type === 'h' && Math.abs(light.y - pt.y) < 50) {
+                        // Horizontal line near light: highlight the nearby section
+                        ctx.moveTo(light.x - 70, pt.y);
+                        ctx.lineTo(light.x + 70, pt.y);
+                    } else if (pt.type === 'v' && Math.abs(light.x - pt.x) < 50) {
+                        // Vertical line near light: highlight the nearby section
+                        ctx.moveTo(pt.x, light.y - 70);
+                        ctx.lineTo(pt.x, light.y + 70);
+                    }
+                    ctx.stroke();
+                });
+            });
+
+            requestAnimationFrame(draw); // Loop continuously for smooth animation
+        }
+        draw(); // Start the loop
+
+        // --- Handling Gestures (Touch/Pointer) ---
+        canvas.addEventListener('pointerdown', (e) => {
+            touchLights.push({ x: e.clientX, y: e.clientY, id: e.pointerId });
+        });
+
+        canvas.addEventListener('pointermove', (e) => {
+            // Find the light associated with this pointer and update its position
+            const light = touchLights.find(l => l.id === e.pointerId);
+            if (light) {
+                light.x = e.clientX;
+                light.y = e.clientY;
+            }
+        });
+
+        canvas.addEventListener('pointerup', (e) => {
+            // Remove the light associated with this pointer
+            const index = touchLights.findIndex(l => l.id === e.pointerId);
+            if (index !== -1) {
+                touchLights.splice(index, 1);
+            }
+        });
+        canvas.addEventListener('pointercancel', (e) => {
+             // Handle cancelled gestures (like incoming calls)
+            const index = touchLights.findIndex(l => l.id === e.pointerId);
+            if (index !== -1) {
+                touchLights.splice(index, 1);
+            }
+        });
+
     </script>
 </body>
 </html>
