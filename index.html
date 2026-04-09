@@ -60,4 +60,88 @@
             transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
         }
 
-        /* A
+        /* A subtle "hover/active" effect for visual feedback before JS triggers */
+        .grid-item:active {
+            transform: scale(0.95); /* Slight shrink on tap */
+        }
+
+        /* This is the key "Liquid Zoom" CSS Class, activated by JS */
+        .grid-item.liquid-active {
+            /* 1. Scale up immensely from the center of the tapped cell */
+            transform: scale(3) !important; 
+            
+            /* 2. Remove the blob shape to become a perfect square (covering screen) */
+            border-radius: 0% !important;
+            
+            /* 3. Increase Z-index to cover everything */
+            z-index: 9999 !important;
+            
+            /* 4. Use full viewport coordinates instead of grid ones */
+            position: fixed !important;
+            top: -100vh; /* Shift position based on tapping, handled by JS */
+            left: -100vw;
+            width: 300vw;
+            height: 300vh;
+
+            /* Faster animation on the scale up */
+            animation: none !important; /* Stop the blob wiggle */
+        }
+
+        /* Animation Keyframes: This makes the blob shape wiggle *continuously* */
+        @keyframes blobby {
+            0%   { border-radius: 40% 60% 60% 40% / 60% 30% 70% 40%; }
+            50%  { border-radius: 60% 40% 40% 60% / 30% 60% 40% 70%; }
+            100% { border-radius: 40% 60% 60% 40% / 60% 30% 70% 40%; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="grid-container">
+        <div class="grid-item">1</div>
+        <div class="grid-item">2</div>
+        <div class="grid-item">3</div>
+        <div class="grid-item">4</div>
+        <div class="grid-item">5</div>
+        <div class="grid-item">6</div>
+        <div class="grid-item">7</div>
+        <div class="grid-item">8</div>
+        <div class="grid-item">9</div>
+    </div>
+
+    <script>
+        // Select all the grid items
+        const gridItems = document.querySelectorAll('.grid-item');
+
+        // Loop through each item and add a click/tap event listener
+        gridItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                // If the element is already zoomed, reset it (optional feature)
+                if (item.classList.contains('liquid-active')) {
+                    item.classList.remove('liquid-active');
+                    item.style.top = ''; 
+                    item.style.left = '';
+                    return;
+                }
+
+                // 1. Get the exact coordinates (position) of the cell you tapped
+                const rect = item.getBoundingClientRect();
+                
+                // 2. Set the fixed coordinates so the animation originates precisely
+                item.style.top = rect.top + 'px';
+                item.style.left = rect.left + 'px';
+                item.style.width = rect.width + 'px';
+                item.style.height = rect.height + 'px';
+
+                // 3. Apply the 'liquid-active' class to trigger the CSS zoom
+                item.classList.add('liquid-active');
+
+                // 4. (Optional) Remove the text so it doesn't get distorted
+                item.textContent = ''; 
+            });
+        });
+    </script>
+
+</body>
+</html>
