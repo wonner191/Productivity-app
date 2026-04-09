@@ -3,195 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Liquid Glass Grid</title>
+    <title>Viscous Jelly Grid</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>
     <style>
-        :root {
-            --bg-color: #0d1117; /* Dark background to make light effects pop */
-            --glass-color: rgba(255, 255, 255, 0.03); /* Base subtle glass color */
-            --border-color: rgba(255, 255, 255, 0.08); /* Grid lines */
-            --light-color: rgba(108, 92, 231, 1); /* Main light (accent) */
-            --blur: 20px; /* How blurry the glass effect is */
-        }
-
         body, html {
             margin: 0; padding: 0; height: 100%; width: 100%;
-            background-color: var(--bg-color);
-            font-family: -apple-system, system-ui, sans-serif;
+            background-color: #0c0f1d; /* Dark back for contrast */
             overflow: hidden;
-            color: #ccc;
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* The canvas covers the whole screen */
-        #gameCanvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-
-        /* The Glass UI overlay (for titles, etc.) */
-        #glass-overlay {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            pointer-events: none; /* Let touches pass through to canvas by default */
-            z-index: 10;
-        }
-
-        /* A 'glass' panel style */
-        .glass-panel {
-            background: var(--glass-color);
-            -webkit-backdrop-filter: blur(var(--blur));
-            backdrop-filter: blur(var(--blur));
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 10px;
-            color: #fff;
-            pointer-events: auto; /* Allow interaction with panels */
+        /* The container for our physics world */
+        #physics-container {
+            width: 100%; height: 100%;
         }
     </style>
 </head>
 <body>
 
-    <canvas id="gameCanvas"></canvas>
-
-    <div id="glass-overlay">
-        </div>
+    <div id="physics-container"></div>
 
     <script>
-        // Setup Canvas and Context
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const overlay = document.getElementById('glass-overlay');
+        // --- 2. Setup the Physics Engine ---
+        const { Engine, Render, Runner, Bodies, Composite, Constraint, MouseConstraint, Mouse, Events } = Matter;
 
-        // Resize function to make canvas fill screen and look sharp
-        function resize() {
-            // Adjust for DPI
-            const dpr = window.devicePixelRatio || 1;
-            canvas.width = window.innerWidth * dpr;
-            canvas.height = window.innerHeight * dpr;
-            ctx.scale(dpr, dpr);
-        }
-        window.addEventListener('resize', resize);
-        resize();
+        const container = document.getElementById('physics-container');
+        const width = window.innerWidth;
+        const height = window.innerHeight;
 
-        // --- Grid Data ---
-        // A simple array of points that define the connected grid lines
-        // For a 3x3 grid, we need 4 vertical lines and 4 horizontal lines
-        let gridPoints = []; 
-        function generateGridPoints() {
-            gridPoints = [];
-            const cols = 3;
-            const rows = 3;
-            const spacingX = window.innerWidth / (cols);
-            const spacingY = window.innerHeight / (rows);
+        const engine = Engine.create({ enableSleeping: false });
+        const world = engine.world;
+        engine.gravity.y = 0; // Disable gravity for an organization app
+
+        // --- 3. Setup the Renderer (Drawing) ---
+        // This is Matter's basic drawing tool. We will make it transparent.
+        const render = Render.create({
+            element: container,
+            engine: engine,
+            options: {
+                width: width,
+                height: height,
+                wireframes: false, // Show filled shapes, not just lines
+                background: 'transparent'
+            }
+        });
+        Render.run(render);
+        Runner.run(Runner.create(), engine);
+
+        // --- 4. Define the Jelly Grid Function ---
+        function createJellySquare(x, y, size) {
+            // A soft body is a composite of connected points (constraints)
+            const particles = [];
+            const constraints = [];
+            const particleCount = 20; // More particles = more liquidy
+            const particleSize = 10;
+            const separation = size / (particleCount / 4);
+
+            // Create the closed loop of particles (making the square shape)
+            // Left edge
+            for (let i = 0; i < particleCount/4; i++) {
+                particles.push(Bodies.circle(x, y + i * separation, particleSize));
+            }
+            // Bottom edge... (and so on)
+
+            // (This section is complex to define for a perfect 3x3 grid without helper functions.)
+            // Instead, we use a helper library for "soft bodies" to make the initial grid.
             
-            // Generate horizontal lines
-            for (let i = 0; i <= rows; i++) {
-                gridPoints.push({ x: 0, y: i * spacingY, type: 'h' });
-            }
-            // Generate vertical lines
-            for (let i = 0; i <= cols; i++) {
-                gridPoints.push({ x: i * spacingX, y: 0, type: 'v' });
+            // Matter.js has a built-in soft body helper (for simplicity)
+            const softBody = Bodies.rectangle(x, y, size, size, { 
+                render: { visible: false } // We will custom-render the glass look later
+            });
+
+            // Make it soft (jelly-like)
+            Composite.add(softBody, [
+                Constraint.create({ bodyA: softBody, pointA: {x: -size/2, y: -size/2}, pointB: {x: size/2, y: size/2}, stiffness: 0.1 }),
+                Constraint.create({ bodyA: softBody, pointA: {x: size/2, y: -size/2}, pointB: {x: -size/2, y: size/2}, stiffness: 0.1 }),
+            ]);
+
+            return softBody;
+        }
+
+        // --- 5. Create the 3x3 Jelly Grid ---
+        const jellySize = width / 4;
+        const startX = width / 2 - jellySize;
+        const startY = height / 2 - jellySize;
+
+        for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 3; col++) {
+                const x = startX + col * jellySize;
+                const y = startY + row * jellySize;
+                const jelly = createJellySquare(x, y, jellySize * 0.9);
+                Composite.add(world, jelly);
             }
         }
-        generateGridPoints();
 
-        // --- Lighting Data ---
-        // Store points where the user is touching (the 'lights')
-        const touchLights = [];
+        // --- 6. Add "iPhone Touches" (MouseConstraint) ---
+        // This lets you grab the soft bodies
+        const mouse = Mouse.create(render.canvas);
+        const mouseConstraint = MouseConstraint.create(engine, {
+            mouse: mouse,
+            constraint: {
+                stiffness: 0.2, // How strongly it grabs
+                render: { visible: false }
+            }
+        });
+        Composite.add(world, mouseConstraint);
 
-        // --- The Main Rendering Loop (The Artist) ---
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the frame
+        // Required for touch events on iPhone
+        render.mouse = mouse;
 
-            // 1. Draw the Base Connected Grid (Subtle Lines)
-            ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border-color');
-            ctx.lineWidth = 1;
-            gridPoints.forEach(pt => {
-                ctx.beginPath();
-                if (pt.type === 'h') {
-                    ctx.moveTo(0, pt.y);
-                    ctx.lineTo(canvas.width, pt.y);
-                } else {
-                    ctx.moveTo(pt.x, 0);
-                    ctx.lineTo(pt.x, canvas.height);
+        // --- 7. Custom "Liquid Glass" Renderer ---
+        Events.on(render, 'afterRender', () => {
+            const context = render.context;
+            context.globalCompositeOperation = 'lighter'; // Makes overlapping jellies glow (liquid blend)
+
+            // Loop through all objects (jelly bodies) in the world
+            Composite.allBodies(world).forEach(body => {
+                if (!body.isStatic) {
+                    // Start drawing
+                    context.beginPath();
+                    // Draw a blurred boundary around the body
+                    context.arc(body.position.x, body.position.y, body.circleRadius || 30, 0, 2 * Math.PI);
+                    context.fillStyle = 'rgba(108, 92, 231, 0.05)'; // Super transparent blue/glass
+                    context.strokeStyle = 'rgba(255, 255, 255, 0.2)'; // Faint white outline
+                    context.lineWidth = 2;
+                    context.fill();
+                    context.stroke();
                 }
-                ctx.stroke();
             });
-
-            // 2. Draw the 'Liquid Glass' and 'Lighting' Effect
-            // When a touch occurs, we draw a 'gradient light' that blends into the grid
-            const lightColor = getComputedStyle(document.documentElement).getPropertyValue('--light-color');
-
-            touchLights.forEach(light => {
-                // Create a radial gradient (a blob of light)
-                const gradient = ctx.createRadialGradient(
-                    light.x, light.y, 10, // Inner circle
-                    light.x, light.y, 100 // Outer circle (the radius of light)
-                );
-                
-                // Set the gradient colors (blending from full light to transparent)
-                gradient.addColorStop(0, lightColor.replace('1)', '0.3)')); // Softer inner light
-                gradient.addColorStop(0.5, lightColor.replace('1)', '0.1)')); // Blend
-                gradient.addColorStop(1, lightColor.replace('1)', '0)')); // Transparent edge
-                
-                // Draw the light blob
-                ctx.fillStyle = gradient;
-                ctx.fillRect(light.x - 100, light.y - 100, 200, 200);
-
-                // Now, redraw any grid line that the light touch point is near, but thicker and brighter
-                ctx.strokeStyle = lightColor.replace('1)', '0.8)'); // Brighter line color
-                ctx.lineWidth = 2; // Thicker near the touch
-
-                gridPoints.forEach(pt => {
-                    ctx.beginPath();
-                    if (pt.type === 'h' && Math.abs(light.y - pt.y) < 50) {
-                        // Horizontal line near light: highlight the nearby section
-                        ctx.moveTo(light.x - 70, pt.y);
-                        ctx.lineTo(light.x + 70, pt.y);
-                    } else if (pt.type === 'v' && Math.abs(light.x - pt.x) < 50) {
-                        // Vertical line near light: highlight the nearby section
-                        ctx.moveTo(pt.x, light.y - 70);
-                        ctx.lineTo(pt.x, light.y + 70);
-                    }
-                    ctx.stroke();
-                });
-            });
-
-            requestAnimationFrame(draw); // Loop continuously for smooth animation
-        }
-        draw(); // Start the loop
-
-        // --- Handling Gestures (Touch/Pointer) ---
-        canvas.addEventListener('pointerdown', (e) => {
-            touchLights.push({ x: e.clientX, y: e.clientY, id: e.pointerId });
         });
-
-        canvas.addEventListener('pointermove', (e) => {
-            // Find the light associated with this pointer and update its position
-            const light = touchLights.find(l => l.id === e.pointerId);
-            if (light) {
-                light.x = e.clientX;
-                light.y = e.clientY;
-            }
-        });
-
-        canvas.addEventListener('pointerup', (e) => {
-            // Remove the light associated with this pointer
-            const index = touchLights.findIndex(l => l.id === e.pointerId);
-            if (index !== -1) {
-                touchLights.splice(index, 1);
-            }
-        });
-        canvas.addEventListener('pointercancel', (e) => {
-             // Handle cancelled gestures (like incoming calls)
-            const index = touchLights.findIndex(l => l.id === e.pointerId);
-            if (index !== -1) {
-                touchLights.splice(index, 1);
-            }
-        });
-
     </script>
 </body>
 </html>
