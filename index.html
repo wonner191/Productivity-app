@@ -3,10 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My iPhone App</title>
+    <title>My 3x3 Grid App</title>
+    <style>
+        /* Basic reset to remove default browser margins */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            /* Setting the background of the whole app to white */
+            background-color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* The main grid container */
+        .grid-container {
+            display: grid;
+            /* Creates 3 columns, each taking up 1 fraction of the available width */
+            grid-template-columns: repeat(3, 1fr);
+            /* Creates 3 rows, each taking up 1 fraction of the available height */
+            grid-template-rows: repeat(3, 1fr);
+            /* Defines the width of the grid (adjust as needed for screen size) */
+            width: 90vw; /* 90% of the viewport width */
+            height: 80vh; /* 80% of the viewport height */
+            /* Adds a small gap between the grid cells */
+            gap: 10px;
+        }
+
+        /* Styling for each individual grid item (cell) */
+        .grid-item {
+            /* This is the transparent part */
+            background-color: transparent; 
+            /* A subtle border so we can see the transparent cells on the white background */
+            border: 2px solid #eaeaea; /* Light gray border */
+            border-radius: 10px; /* Rounded corners */
+            
+            /* Center any content that we might add to the cell later */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            color: #555;
+        }
+    </style>
 </head>
 <body>
-    <h1>It works!</h1>
-    <p>This is my offline web app lol lol yea?.</p>
+
+    <div class="grid-container">
+        <div class="grid-item">1</div>
+        <div class="grid-item">2</div>
+        <div class="grid-item">3</div>
+        <div class="grid-item">4</div>
+        <div class="grid-item">5</div>
+        <div class="grid-item">6</div>
+        <div class="grid-item">7</div>
+        <div class="grid-item">8</div>
+        <div class="grid-item">9</div>
+    </div>
+
 </body>
 </html>
