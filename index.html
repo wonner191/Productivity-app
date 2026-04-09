@@ -2,146 +2,141 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Liquid Grid Zoom</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Fluid Organizer</title>
     <style>
-        /* Basic Reset & Setup for iPhone */
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            width: 100%;
-            background-color: white;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden; /* Prevents scrollbars during animation */
-            /* Crucial iOS property to disable default tap highlights */
-            -webkit-tap-highlight-color: transparent; 
+        :root {
+            --bg: #ffffff;
+            --text: #2d3436;
+            --accent: linear-gradient(135deg, #6c5ce7, #a29bfe);
         }
 
-        /* The main grid container */
+        body, html {
+            margin: 0; padding: 0; height: 100%; width: 100%;
+            background-color: var(--bg);
+            font-family: -apple-system, system-ui, sans-serif;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 3x3 Grid Layout */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(3, 1fr);
-            width: 90vw; 
-            height: 80vh; 
-            gap: 15px; /* Slightly larger gap for effect */
-            z-index: 1; /* Keep grid behind the animated element */
+            width: 90vw; height: 80vh;
+            gap: 15px;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
-        /* The Liquid Grid Item (Button) */
+        /* The Liquid Blobs */
         .grid-item {
-            position: relative; /* Container for the liquid blob */
+            position: relative;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            font-size: 1.5rem;
-            color: white; /* Text color inside the blob */
+            color: white;
             cursor: pointer;
-            z-index: 2; /* Items sit above container */
-            
-            /* The 'liquidy' shape itself (the blob) */
-            /* Using a simple border-radius trick to create a blob shape */
-            border-radius: 40% 60% 60% 40% / 60% 30% 70% 40%;
-            
-            /* Initial color (can be any color, we'll use a gradient) */
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            
-            /* Initial shadow for depth */
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            
-            /* Define the core animation for the continuous wiggle */
-            animation: blobby 6s ease-in-out infinite;
-            
-            /* Define the transition for when it gets tapped (zooms) */
-            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            background: var(--accent);
+            box-shadow: 0 10px 20px rgba(108, 92, 231, 0.2);
+            animation: blobby 8s ease-in-out infinite;
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            z-index: 10;
         }
 
-        /* A subtle "hover/active" effect for visual feedback before JS triggers */
-        .grid-item:active {
-            transform: scale(0.95); /* Slight shrink on tap */
+        .grid-item span { font-weight: 600; font-size: 0.9rem; pointer-events: none; }
+
+        /* Content inside the zoom - hidden by default */
+        .content {
+            display: none;
+            opacity: 0;
+            padding: 40px 20px;
+            color: white;
+            width: 100%;
+            text-align: center;
         }
 
-        /* This is the key "Liquid Zoom" CSS Class, activated by JS */
-        .grid-item.liquid-active {
-            /* 1. Scale up immensely from the center of the tapped cell */
-            transform: scale(3) !important; 
-            
-            /* 2. Remove the blob shape to become a perfect square (covering screen) */
-            border-radius: 0% !important;
-            
-            /* 3. Increase Z-index to cover everything */
-            z-index: 9999 !important;
-            
-            /* 4. Use full viewport coordinates instead of grid ones */
+        /* The Zoom State */
+        .grid-item.active {
             position: fixed !important;
-            top: -100vh; /* Shift position based on tapping, handled by JS */
-            left: -100vw;
-            width: 300vw;
-            height: 300vh;
-
-            /* Faster animation on the scale up */
-            animation: none !important; /* Stop the blob wiggle */
+            top: 0 !important; left: 0 !important;
+            width: 100vw !important; height: 100vh !important;
+            border-radius: 0 !important;
+            z-index: 9999;
+            animation: none;
         }
 
-        /* Animation Keyframes: This makes the blob shape wiggle *continuously* */
+        .grid-item.active .content {
+            display: block;
+            opacity: 1;
+            transition: opacity 0.5s 0.3s;
+        }
+
+        .grid-item.active span { display: none; }
+
+        /* Close Button inside zoom */
+        .close-btn {
+            position: absolute;
+            top: 50px; right: 30px;
+            font-size: 2rem;
+            display: none;
+        }
+        .grid-item.active .close-btn { display: block; }
+
         @keyframes blobby {
-            0%   { border-radius: 40% 60% 60% 40% / 60% 30% 70% 40%; }
-            50%  { border-radius: 60% 40% 40% 60% / 30% 60% 40% 70%; }
-            100% { border-radius: 40% 60% 60% 40% / 60% 30% 70% 40%; }
+            0%, 100% { border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%; }
+            33% { border-radius: 70% 30% 46% 54% / 30% 29% 71% 70%; }
+            66% { border-radius: 100% 60% 60% 100% / 100% 100% 60% 60%; }
         }
 
+        /* Organization UI Elements */
+        .task-list { list-style: none; padding: 0; margin-top: 20px; text-align: left; }
+        .task-item { 
+            background: rgba(255,255,255,0.2); 
+            padding: 15px; border-radius: 15px; 
+            margin-bottom: 10px; backdrop-filter: blur(5px);
+        }
     </style>
 </head>
 <body>
 
     <div class="grid-container">
-        <div class="grid-item">1</div>
-        <div class="grid-item">2</div>
-        <div class="grid-item">3</div>
-        <div class="grid-item">4</div>
-        <div class="grid-item">5</div>
-        <div class="grid-item">6</div>
-        <div class="grid-item">7</div>
-        <div class="grid-item">8</div>
-        <div class="grid-item">9</div>
+        <div class="grid-item" onclick="toggleZoom(this)">
+            <span>Tasks</span>
+            <div class="close-btn">&times;</div>
+            <div class="content">
+                <h2>Today's Focus</h2>
+                <div class="task-list">
+                    <div class="task-item">✓ Morning Workout</div>
+                    <div class="task-item">○ Code liquid UI</div>
+                    <div class="task-item">○ GitHub push</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid-item" onclick="toggleZoom(this)"><span>Calendar</span></div>
+        <div class="grid-item" onclick="toggleZoom(this)"><span>Notes</span></div>
+        <div class="grid-item" onclick="toggleZoom(this)"><span>Goals</span></div>
+        <div class="grid-item" onclick="toggleZoom(this)"><span>Finance</span></div>
+        <div class="grid-item" onclick="toggleZoom(this)"><span>Ideas</span></div>
+        <div class="grid-item" onclick="toggleZoom(this)"><span>Health</span></div>
+        <div class="grid-item" onclick="toggleZoom(this)"><span>Reading</span></div>
+        <div class="grid-item" onclick="toggleZoom(this)"><span>Settings</span></div>
     </div>
 
     <script>
-        // Select all the grid items
-        const gridItems = document.querySelectorAll('.grid-item');
+        function toggleZoom(el) {
+            el.classList.toggle('active');
+        }
 
-        // Loop through each item and add a click/tap event listener
-        gridItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                // If the element is already zoomed, reset it (optional feature)
-                if (item.classList.contains('liquid-active')) {
-                    item.classList.remove('liquid-active');
-                    item.style.top = ''; 
-                    item.style.left = '';
-                    return;
-                }
-
-                // 1. Get the exact coordinates (position) of the cell you tapped
-                const rect = item.getBoundingClientRect();
-                
-                // 2. Set the fixed coordinates so the animation originates precisely
-                item.style.top = rect.top + 'px';
-                item.style.left = rect.left + 'px';
-                item.style.width = rect.width + 'px';
-                item.style.height = rect.height + 'px';
-
-                // 3. Apply the 'liquid-active' class to trigger the CSS zoom
-                item.classList.add('liquid-active');
-
-                // 4. (Optional) Remove the text so it doesn't get distorted
-                item.textContent = ''; 
-            });
-        });
+        // Register Service Worker for Offline
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+        }
     </script>
-
 </body>
 </html>
